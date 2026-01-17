@@ -1,0 +1,242 @@
+-- Services
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local TweenService = game:GetService("TweenService")
+local Lighting = game:GetService("Lighting")
+local Stats = game:GetService("Stats")
+local LocalPlayer = Players.LocalPlayer
+
+repeat task.wait() until LocalPlayer:FindFirstChild("PlayerGui")
+
+--=== MAIN GUI ===--
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "WxzqlLowGUI"
+screenGui.Parent = LocalPlayer.PlayerGui
+screenGui.ResetOnSpawn = false
+
+local mainFrame = Instance.new("Frame")
+mainFrame.Size = UDim2.new(0, 280, 0, 320)
+mainFrame.Position = UDim2.new(0.5, -140, 0.5, -160)
+mainFrame.BackgroundColor3 = Color3.fromRGB(10, 8, 20)
+mainFrame.BackgroundTransparency = 0.20
+mainFrame.BorderSizePixel = 0
+mainFrame.Parent = screenGui
+mainFrame.Active = true
+mainFrame.Draggable = true
+
+local frameCorner = Instance.new("UICorner")
+frameCorner.CornerRadius = UDim.new(0, 16)
+frameCorner.Parent = mainFrame
+
+-- Borde morado con pulso
+local uiStroke = Instance.new("UIStroke")
+uiStroke.Thickness = 2.8
+uiStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+uiStroke.Color = Color3.fromRGB(140, 90, 255)
+uiStroke.Parent = mainFrame
+
+spawn(function()
+    while true do
+        TweenService:Create(uiStroke, TweenInfo.new(2, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {
+            Color = Color3.fromRGB(190, 140, 255)
+        }):Play()
+        task.wait(2)
+        TweenService:Create(uiStroke, TweenInfo.new(2, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {
+            Color = Color3.fromRGB(100, 60, 220)
+        }):Play()
+        task.wait(2)
+    end
+end)
+
+-- Título
+local title = Instance.new("TextLabel")
+title.Size = UDim2.new(1, 0, 0, 48)
+title.BackgroundColor3 = Color3.fromRGB(20, 15, 40)
+title.BackgroundTransparency = 0.35
+title.Text = "Wxzql low"
+title.TextColor3 = Color3.fromRGB(200, 160, 255)
+title.Font = Enum.Font.GothamBlack
+title.TextSize = 24
+title.Parent = mainFrame
+
+local titleCorner = Instance.new("UICorner")
+titleCorner.CornerRadius = UDim.new(0, 16)
+titleCorner.Parent = title
+
+-- Minimizar
+local minimizeButton = Instance.new("TextButton")
+minimizeButton.Size = UDim2.new(0, 32, 0, 32)
+minimizeButton.Position = UDim2.new(1, -38, 0, 8)
+minimizeButton.BackgroundColor3 = Color3.fromRGB(60, 45, 100)
+minimizeButton.Text = "-"
+minimizeButton.TextColor3 = Color3.fromRGB(230, 200, 255)
+minimizeButton.Font = Enum.Font.GothamBold
+minimizeButton.TextSize = 24
+minimizeButton.Parent = mainFrame
+
+local minButtonCorner = Instance.new("UICorner")
+minButtonCorner.CornerRadius = UDim.new(0, 10)
+minButtonCorner.Parent = minimizeButton
+
+local originalSize = mainFrame.Size
+local isMinimized = false
+
+-- FPS + Ping → arriba izquierda
+local statsFrame = Instance.new("Frame")
+statsFrame.Size = UDim2.new(0, 140, 0, 38)
+statsFrame.Position = UDim2.new(0, 12, 0, 52)
+statsFrame.BackgroundTransparency = 1
+statsFrame.Parent = mainFrame
+
+local fpsLabel = Instance.new("TextLabel")
+fpsLabel.Size = UDim2.new(1, 0, 0.5, 0)
+fpsLabel.BackgroundTransparency = 1
+fpsLabel.Text = "FPS: ---"
+fpsLabel.TextColor3 = Color3.fromRGB(180, 255, 180)
+fpsLabel.Font = Enum.Font.GothamSemibold
+fpsLabel.TextSize = 15
+fpsLabel.TextXAlignment = Enum.TextXAlignment.Left
+fpsLabel.Parent = statsFrame
+
+local pingLabel = Instance.new("TextLabel")
+pingLabel.Size = UDim2.new(1, 0, 0.5, 0)
+pingLabel.Position = UDim2.new(0, 0, 0.5, 0)
+pingLabel.BackgroundTransparency = 1
+pingLabel.Text = "Ping: --- ms"
+pingLabel.TextColor3 = Color3.fromRGB(255, 220, 140)
+pingLabel.Font = Enum.Font.GothamSemibold
+pingLabel.TextSize = 15
+pingLabel.TextXAlignment = Enum.TextXAlignment.Left
+pingLabel.Parent = statsFrame
+
+-- ScrollingFrame
+local scrollingFrame = Instance.new("ScrollingFrame")
+scrollingFrame.Size = UDim2.new(1, -20, 1, -110)
+scrollingFrame.Position = UDim2.new(0, 10, 0, 100)
+scrollingFrame.BackgroundTransparency = 1
+scrollingFrame.ScrollBarThickness = 6
+scrollingFrame.ScrollBarImageColor3 = Color3.fromRGB(140, 90, 255)
+scrollingFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
+scrollingFrame.AutomaticCanvasSize = Enum.AutomaticSize.Y
+scrollingFrame.Parent = mainFrame
+
+local listLayout = Instance.new("UIListLayout")
+listLayout.Padding = UDim.new(0, 12)
+listLayout.FillDirection = Enum.FillDirection.Vertical
+listLayout.SortOrder = Enum.SortOrder.LayoutOrder
+listLayout.Parent = scrollingFrame
+
+-- Función para sacarte del juego
+local function leaveGame()
+    -- Método 1: el más común y efectivo en la mayoría de juegos
+    game:GetService("TeleportService"):Teleport(game.PlaceId, LocalPlayer)
+    
+    -- Método 2: alternativo (por si el primero falla en algún juego raro)
+    -- LocalPlayer:Kick("Left the game")
+    
+    -- Método 3: intento de cierre forzado (a veces funciona en executors)
+    -- game:Shutdown()
+end
+
+-- Botones / toggles
+local buttons = {}
+local toggles = { NoLag = false, AntiLag = false, UltraGraphics = false, NoAnimation = false }
+
+local function createOptions()
+    if #buttons > 0 then return end
+    
+    local options = {
+        {name = "No Lag",         key = "NoLag"},
+        {name = "Anti Lag",       key = "AntiLag"},
+        {name = "Ultra Graphics", key = "UltraGraphics"},
+        {name = "No Animation",   key = "NoAnimation"},
+        {name = "Left Game",      key = "LeftGame", isToggle = false, isDanger = true}
+    }
+    
+    for i, opt in ipairs(options) do
+        local button = Instance.new("TextButton")
+        button.Size = UDim2.new(1, -20, 0, 42)
+        button.BackgroundColor3 = opt.isDanger and Color3.fromRGB(100, 30, 40) or Color3.fromRGB(35, 30, 65)
+        button.BackgroundTransparency = 0.40
+        button.Text = opt.name
+        button.TextColor3 = opt.isDanger and Color3.fromRGB(255, 190, 190) or Color3.fromRGB(220, 200, 255)
+        button.Font = Enum.Font.GothamSemibold
+        button.TextSize = 17
+        button.Parent = scrollingFrame
+        button.LayoutOrder = i
+        
+        local corner = Instance.new("UICorner")
+        corner.CornerRadius = UDim.new(0, 12)
+        corner.Parent = button
+        
+        if opt.key == "LeftGame" then
+            button.MouseButton1Click:Connect(function()
+                -- Pequeña confirmación visual antes de kickear
+                button.Text = "Saliendo..."
+                button.BackgroundColor3 = Color3.fromRGB(180, 50, 50)
+                task.wait(0.6)
+                leaveGame()
+            end)
+        else
+            local isActive = false
+            button.MouseButton1Click:Connect(function()
+                isActive = not isActive
+                toggles[opt.key] = isActive
+                
+                if isActive then
+                    button.BackgroundColor3 = Color3.fromRGB(130, 80, 230)
+                    button.TextColor3 = Color3.fromRGB(255,255,255)
+                else
+                    button.BackgroundColor3 = Color3.fromRGB(35, 30, 65)
+                    button.TextColor3 = Color3.fromRGB(220, 200, 255)
+                end
+                
+                if opt.key == "NoLag" then
+                    settings().Rendering.QualityLevel = isActive and Enum.QualityLevel.Level01 or Enum.QualityLevel.Automatic
+                elseif opt.key == "UltraGraphics" then
+                    settings().Rendering.QualityLevel = isActive and Enum.QualityLevel.Level21 or Enum.QualityLevel.Automatic
+                    Lighting.GlobalShadows = isActive
+                elseif opt.key == "NoAnimation" and isActive and LocalPlayer.Character then
+                    for _, v in pairs(LocalPlayer.Character:GetDescendants()) do
+                        if v:IsA("Animator") then v:Destroy() end
+                    end
+                end
+            end)
+        end
+        
+        table.insert(buttons, button)
+    end
+end
+
+local function clearOptions()
+    for _, b in ipairs(buttons) do b:Destroy() end
+    buttons = {}
+end
+
+createOptions()
+
+-- FPS + Ping update
+spawn(function()
+    while true do
+        local dt = RunService.RenderStepped:Wait()
+        local fps = math.floor(1 / dt)
+        local ping = math.floor(Stats.Network.ServerStatsItem["Data Ping"]:GetValue() or 0)
+        
+        fpsLabel.Text = "FPS: " .. fps
+        pingLabel.Text = "Ping: " .. ping .. " ms"
+        task.wait(1)
+    end
+end)
+
+-- Minimizar
+minimizeButton.MouseButton1Click:Connect(function()
+    if isMinimized then
+        TweenService:Create(mainFrame, TweenInfo.new(0.4, Enum.EasingStyle.Quint), {Size = originalSize}):Play()
+        task.delay(0.45, createOptions)
+        isMinimized = false
+    else
+        TweenService:Create(mainFrame, TweenInfo.new(0.4, Enum.EasingStyle.Quint), {Size = UDim2.new(originalSize.X.Scale, originalSize.X.Offset, 0, 48)}):Play()
+        clearOptions()
+        isMinimized = true
+    end
+end)
